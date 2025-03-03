@@ -22,40 +22,32 @@ let otpStore = {};
 
 // 1️⃣ Register User & Send OTP
 app.post('/register', async (req, res) => {
-    const { username, password, phone, email, address } = req.body;
+    const { username, password, phone, email, address, role } = req.body;
 
-    if (!username || !password || !phone || !email || !address) {
+    if (!username || !password || !phone || !email || !address || !role) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
     try {
-        // 1️⃣ Check if phone number already exists
-        const checkUser = await pool.query('SELECT id FROM users WHERE phone = $1', [phone]);
-        if (checkUser.rows.length > 0) {
-            return res.status(400).json({ error: 'Phone number already registered' });
-        }
-
-        // 2️⃣ Hash Password
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 3️⃣ Insert New User
+        // Insert into database
         const result = await pool.query(
-            'INSERT INTO users (username, password, phone, email, address) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [username, hashedPassword, phone, email, address]
+            'INSERT INTO users (username, password, phone, email, address, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [username, hashedPassword, phone, email, address, role]
         );
 
         const userId = result.rows[0].id;
 
-        // 4️⃣ Generate OTP
+        // Generate OTP
         const otp = Math.floor(100000 + Math.random() * 900000);
         otpStore[phone] = otp;
 
-        console.log(`OTP for ${phone}: ${otp}`);
+        console.log(`OTP for ${phone}: ${otp}`); // Simulated OTP (Use SMS API in production)
 
-        res.status(200).json({ userId, message: 'OTP sent to phone' });
-
+        res.status(200).json({ userId, message: 'User registered & OTP sent' });
     } catch (error) {
-        console.error('Registration error:', error);
         res.status(500).json({ error: 'User registration failed', details: error.message });
     }
 });
