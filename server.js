@@ -28,19 +28,19 @@ app.post('/register', async (req, res) => {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
+    if (role !== 'builder' && role !== 'investor') {
+        return res.status(400).json({ error: 'Invalid role, must be builder or investor' });
+    }
+
     try {
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert into database
         const result = await pool.query(
             'INSERT INTO users (username, password, phone, email, address, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
             [username, hashedPassword, phone, email, address, role]
         );
 
         const userId = result.rows[0].id;
-
-        // Generate OTP
         const otp = Math.floor(100000 + Math.random() * 900000);
         otpStore[phone] = otp;
 
